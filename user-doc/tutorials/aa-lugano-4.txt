@@ -579,4 +579,6 @@ by reading https://arxiv.org/abs/1812.08213.
 
 link: @subpage lugano-4 
 
-description: Calculating error bars
+description: How to calculate error bars ensemble averages by means of block averaging
+
+additional-files: lugano-4
