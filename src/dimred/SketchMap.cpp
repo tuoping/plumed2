@@ -86,7 +86,7 @@ SketchMap::SketchMap( const ActionOptions& ao ) :
   if( asteps>1 ) {
     double smear; parse("ANNEAL_RATE", smear); double old_mix = 1.0; double new_mix = old_mix*smear;
     for(unsigned i=0; i<asteps; ++i) {
-      std::string omix; Tools::convert( old_mix, omix ); std::size_t odot=omix.find_first_of("."); omix = omix.substr(0,odot) + omix.substr(odot+1); 
+      std::string omix; Tools::convert( old_mix, omix ); std::size_t odot=omix.find_first_of("."); omix = omix.substr(0,odot) + omix.substr(odot+1);
       std::string nmix; Tools::convert( new_mix, nmix ); std::size_t ndot=nmix.find_first_of("."); nmix = nmix.substr(0,ndot) + nmix.substr(ndot+1);
       imds_line_cg = getShortcutLabel() + "_smap" + nmix + "_cg: SKETCHMAP_CONJGRAD USE_OUTPUT_DATA_FROM=" + getShortcutLabel() + "_smap" + omix + "_pw";
       imds_line_cg += cg_step_input + " MIXPARAM=" + nmix; readInputLine( imds_line_cg );
