@@ -50,9 +50,9 @@ using namespace std;
 namespace PLMD {
 namespace isdb {
 
-//+PLUMEDOC ISDB_COLVAR SAXSNEW
+//+PLUMEDOC ISDB_COLVAR SAXS
 /*
-Calculates SAXSNEW scattered intensity using either the Debye equation or the harmonic sphere approximation.
+Calculates SAXS scattered intensity using either the Debye equation or the harmonic sphere approximation.
 
 Intensities are calculated for a set of scattering length set using QVALUE keywords that are numbered starting from 0.
 Structure factors can be either assigned using a polynomial expansion to any order using the PARAMETERS keywords;
@@ -61,7 +61,7 @@ automatically added, with water density that by default is 0.334 but that can be
 automatically assigned to Martini pseudo atoms using the MARTINI flag.
 The calculated intensities can be scaled using the SCALEINT keywords. This is applied by rescaling the structure factors.
 Experimental reference intensities can be added using the EXPINT keywords.
-By default SAXSNEW is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
+By default SAXS is calculated using Debye on CPU, by adding the GPU flag it is possible to solve the equation on a GPU
 if the ARRAYFIRE libraries are installed and correctly linked (). Alternatively we an implementation based on Bessel functions,
 BESSEL flag. This is very fast for small q values because a short expansion is enough.
 An automatic choice is made for which q Bessel are used and for which the calculation is done by Debye. If one wants to force
@@ -75,7 +75,7 @@ are obtained from the pdb file indicated in the MOLINFO.
 \plumedfile
 MOLINFO STRUCTURE=template.pdb
 
-SAXSNEW ...
+SAXS ...
 LABEL=saxs
 ATOMS=1-355
 SCALEINT=3920000
@@ -95,7 +95,7 @@ QVALUE12=0.35 EXPINT12=0.0180036
 QVALUE13=0.38 EXPINT13=0.0193374
 QVALUE14=0.41 EXPINT14=0.0210131
 QVALUE15=0.44 EXPINT15=0.0220506
-... SAXSNEW
+... SAXS
 
 PRINT ARG=(saxs\.q-.*),(saxs\.exp-.*) FILE=colvar STRIDE=1
 
@@ -104,7 +104,7 @@ PRINT ARG=(saxs\.q-.*),(saxs\.exp-.*) FILE=colvar STRIDE=1
 */
 //+ENDPLUMEDOC
 
-class SAXSNEW :
+class SAXS :
   public MetainferenceBase
 {
 private:
@@ -140,33 +140,33 @@ private:
 
 public:
   static void registerKeywords( Keywords& keys );
-  explicit SAXSNEW(const ActionOptions&);
+  explicit SAXS(const ActionOptions&);
   void calculate() override;
   void update() override;
 };
 
-PLUMED_REGISTER_ACTION(SAXSNEW,"SAXSNEW")
+PLUMED_REGISTER_ACTION(SAXS,"SAXS")
 
-void SAXSNEW::registerKeywords(Keywords& keys) {
+void SAXS::registerKeywords(Keywords& keys) {
   componentsAreNotOptional(keys);
   MetainferenceBase::registerKeywords(keys);
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("compulsory","DEVICEID","0","Identifier of the GPU to be used");
-  keys.addFlag("GPU",false,"calculate SAXSNEW using ARRAYFIRE on an accelerator device");
-  keys.addFlag("ATOMISTIC",false,"calculate SAXSNEW for an atomistic model");
-  keys.addFlag("MARTINI",false,"calculate SAXSNEW for a Martini model");
+  keys.addFlag("GPU",false,"calculate SAXS using ARRAYFIRE on an accelerator device");
+  keys.addFlag("ATOMISTIC",false,"calculate SAXS for an atomistic model");
+  keys.addFlag("MARTINI",false,"calculate SAXS for a Martini model");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("numbered","QVALUE","Selected scattering lengths in Angstrom are given as QVALUE1, QVALUE2, ... .");
   keys.add("numbered","PARAMETERS","Used parameter Keywords like PARAMETERS1, PARAMETERS2. These are used to calculate the structure factor for the \\f$i\\f$th atom/bead.");
   keys.add("compulsory","WATERDENS","0.334","Density of the water to be used for the correction of atomistic structure factors.");
   keys.add("numbered","EXPINT","Add an experimental value for each q value.");
   keys.add("compulsory","SCALEINT","1.0","SCALING value of the calculated data. Useful to simplify the comparison.");
-  keys.addOutputComponent("q","default","the # SAXSNEW of q");
+  keys.addOutputComponent("q","default","the # SAXS of q");
   keys.addOutputComponent("exp","EXPINT","the # experimental intensity");
 }
 
-SAXSNEW::SAXSNEW(const ActionOptions&ao):
+SAXS::SAXS(const ActionOptions&ao):
   PLUMED_METAINF_INIT(ao),
   pbc(true),
   serial(false),
@@ -361,7 +361,7 @@ SAXSNEW::SAXSNEW(const ActionOptions&ao):
   checkRead();
 }
 
-void SAXSNEW::calculate_gpu(vector<Vector> &deriv)
+void SAXS::calculate_gpu(vector<Vector> &deriv)
 {
 #ifdef __PLUMED_HAS_ARRAYFIRE
   const unsigned size = getNumberOfAtoms();
@@ -462,7 +462,7 @@ void SAXSNEW::calculate_gpu(vector<Vector> &deriv)
 #endif
 }
 
-void SAXSNEW::calculate_cpu(vector<Vector> &deriv)
+void SAXS::calculate_cpu(vector<Vector> &deriv)
 {
   const unsigned size = getNumberOfAtoms();
   const unsigned numq = q_list.size();
@@ -528,7 +528,7 @@ void SAXSNEW::calculate_cpu(vector<Vector> &deriv)
   }
 }
 
-void SAXSNEW::calculate()
+void SAXS::calculate()
 {
   if(pbc) makeWhole();
 
@@ -567,12 +567,12 @@ void SAXSNEW::calculate()
   }
 }
 
-void SAXSNEW::update() {
+void SAXS::update() {
   // write status file
   if(getWstride()>0&& (getStep()%getWstride()==0 || getCPT()) ) writeStatus();
 }
 
-void SAXSNEW::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
+void SAXS::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<long double> > &parameter)
 {
   parameter[ALA_BB].push_back(9.045);
   parameter[ALA_BB].push_back(-0.098114);
@@ -1973,7 +1973,7 @@ void SAXSNEW::getMartiniSFparam(const vector<AtomNumber> &atoms, vector<vector<l
   }
 }
 
-double SAXSNEW::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho)
+double SAXS::calculateASF(const vector<AtomNumber> &atoms, vector<vector<long double> > &FF_tmp, const double rho)
 {
   map<string, unsigned> AA_map;
   AA_map["H"] = H;
