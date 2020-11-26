@@ -1611,6 +1611,7 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double weight, 
           for(unsigned i=0; i<sigma_max_.size(); i++) {
             sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
             Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
+            if(sigma_[i]>sigma_max_[i]) sigma_[i]=sigma_max_[i];
           }
         }
       }
