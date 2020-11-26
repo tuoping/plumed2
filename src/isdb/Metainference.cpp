@@ -1509,7 +1509,7 @@ void Metainference::getEnergyForceMIGEN(const std::vector<double> &mean, const s
 
 void Metainference::get_weights(const unsigned iselect, double &weight, double &norm, double &neff)
 {
-  const double dnrep    = static_cast<double>(nrep_);
+  const double dnrep = static_cast<double>(nrep_);
   // calculate the weights either from BIAS
   if(do_reweight_) {
     std::vector<double> bias(nrep_,0);
@@ -1519,7 +1519,7 @@ void Metainference::get_weights(const unsigned iselect, double &weight, double &
     }
     comm.Sum(&bias[0], nrep_);
 
-    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp(bias[i]/kbt_);
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = bias[i]/kbt_;
 
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
@@ -1534,7 +1534,8 @@ void Metainference::get_weights(const unsigned iselect, double &weight, double &
     }
 
     // set average back into bias and set norm to one
-    for(unsigned i=0; i<nrep_; ++i) bias[i] = average_weights_[iselect][i];
+    const double maxbias = *(std::max_element(average_weights_[iselect].begin(), average_weights_[iselect].end()));
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp(average_weights_[iselect][i]-maxbias);
     // set local weight, norm and weight variance
     weight = bias[replica_];
     double w2=0.;
