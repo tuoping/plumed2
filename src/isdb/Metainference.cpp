@@ -1519,8 +1519,6 @@ void Metainference::get_weights(const unsigned iselect, double &weight, double &
     }
     comm.Sum(&bias[0], nrep_);
 
-    for(unsigned i=0; i<nrep_; ++i) bias[i] = bias[i]/kbt_;
-
     // accumulate weights
     const double decay = 1./static_cast<double> (average_weights_stride_);
     if(!firstTimeW[iselect]) {
@@ -1535,7 +1533,7 @@ void Metainference::get_weights(const unsigned iselect, double &weight, double &
 
     // set average back into bias and set norm to one
     const double maxbias = *(std::max_element(average_weights_[iselect].begin(), average_weights_[iselect].end()));
-    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp(average_weights_[iselect][i]-maxbias);
+    for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp((average_weights_[iselect][i]-maxbias)/kbt_);
     // set local weight, norm and weight variance
     weight = bias[replica_];
     double w2=0.;
