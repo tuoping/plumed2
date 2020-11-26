@@ -76,6 +76,7 @@ void MetainferenceBase::registerKeywords( Keywords& keys ) {
   keys.addOutputComponent("score",        "default",      "the Metainference score");
   keys.addOutputComponent("sigma",        "default",      "uncertainty parameter");
   keys.addOutputComponent("sigmaMean",    "default",      "uncertainty in the mean estimate");
+  keys.addOutputComponent("neff",         "default",      "effective number of replicas");
   keys.addOutputComponent("acceptSigma",  "default",      "MC acceptance for sigma values");
   keys.addOutputComponent("acceptScale",  "SCALEDATA",    "MC acceptance for scale value");
   keys.addOutputComponent("acceptFT",     "GENERIC",      "MC acceptance for general metainference f tilde value");
@@ -523,6 +524,9 @@ void MetainferenceBase::Initialise(const unsigned input)
     addComponent("weight");
     componentIsNotPeriodic("weight");
   }
+
+  addComponent("neff");
+  componentIsNotPeriodic("neff");
 
   if(doscale_ || doregres_zero_) {
     addComponent("scale");
@@ -1301,11 +1305,12 @@ void MetainferenceBase::get_weights(double &weight, double &norm, double &neff)
     for(unsigned i=0; i<nrep_; ++i) bias[i] = average_weights_[iselect][i];
     // set local weight, norm and weight variance
     weight = bias[replica_];
+    double w2=0.;
     for(unsigned i=0; i<nrep_; ++i) {
-      neff += bias[i]*bias[i];
+      w2 += bias[i]*bias[i];
       norm += bias[i];
     }
-    neff = norm*norm/neff;
+    neff = norm*norm/w2;
     getPntrToComponent("weight")->set(weight/norm);
   } else {
     // or arithmetic ones
@@ -1313,6 +1318,7 @@ void MetainferenceBase::get_weights(double &weight, double &norm, double &neff)
     weight = 1.0;
     norm = dnrep;
   }
+  getPntrToComponent("neff")->set(neff);
 }
 
 void MetainferenceBase::get_sigma_mean(const double weight, const double norm, const double neff, const std::vector<double> &mean)
