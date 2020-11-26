@@ -1604,13 +1604,12 @@ void Metainference::get_sigma_mean(const unsigned iselect, const double weight, 
     // start sigma max optimization
     if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
       for(unsigned i=0; i<sigma_max_.size(); i++) {
-        sigma_max_est_[i] += std::sqrt(sigma_mean2_tmp[i]);
+        if(sigma_max_est_[i]<sigma_mean2_tmp[i]) sigma_max_est_[i]=sigma_mean2_tmp[i];
         // ready to set once and for all the value of sigma_max
         if(optimized_step_==N_optimized_step_) {
-          double isteps = 1./static_cast<double>(optimized_step_);
           sigmamax_opt_done_=true;
           for(unsigned i=0; i<sigma_max_.size(); i++) {
-            sigma_max_[i]=sigma_max_est_[i]*isteps*std::sqrt(dnrep);
+            sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
             Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
           }
         }

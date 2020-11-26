@@ -201,7 +201,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
 
   unsigned aver_max_steps=0;
   parse("SIGMA_MAX_STEPS", aver_max_steps);
-  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*2000;
   if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
   if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
 
@@ -1372,13 +1372,12 @@ void MetainferenceBase::get_sigma_mean(const double weight, const double norm, c
     // start sigma max optimization
     if(do_optsigmamean_>1&&!sigmamax_opt_done_) {
       for(unsigned i=0; i<sigma_max_.size(); i++) {
-        sigma_max_est_[i] += std::sqrt(sigma_mean2_tmp[i]);
+        if(sigma_max_est_[i]<sigma_mean2_tmp[i]) sigma_max_est_[i]=sigma_mean2_tmp[i];
         // ready to set once and for all the value of sigma_max
         if(optimized_step_==N_optimized_step_) {
-          double isteps = 1./static_cast<double>(optimized_step_);
           sigmamax_opt_done_=true;
           for(unsigned i=0; i<sigma_max_.size(); i++) {
-            sigma_max_[i]=sigma_max_est_[i]*isteps*std::sqrt(dnrep);
+            sigma_max_[i]=std::sqrt(sigma_max_est_[i]*dnrep);
             Dsigma_[i] = 0.05*(sigma_max_[i] - sigma_min_[i]);
           }
         }
