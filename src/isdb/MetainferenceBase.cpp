@@ -1287,7 +1287,6 @@ void MetainferenceBase::get_weights(double &weight, double &norm, double &neff)
     }
     comm.Sum(&bias[0], nrep_);
 
-    //const double maxbias = *(std::max_element(bias.begin(), bias.end()));
     for(unsigned i=0; i<nrep_; ++i) bias[i] = std::exp(bias[i]/kbt_);
 
     // accumulate weights
