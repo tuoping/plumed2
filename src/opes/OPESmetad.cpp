@@ -811,7 +811,7 @@ void OPESmetad::calculate()
 //set bias and forces
   std::vector<double> der_prob(ncv_,0);
   const double prob=getProbAndDerivatives(cv,der_prob);
-  current_bias_=kbt_*bias_prefactor_*std::log(prob/Zed_+epsilon_);
+  current_bias_=kbt_*(bias_prefactor_*std::log(prob/Zed_+epsilon_)+biasfactor_);
   setBias(current_bias_);
   for(unsigned i=0; i<ncv_; i++)
     setOutputForce(i,der_prob[i]==0?0:-kbt_*bias_prefactor_/(prob/Zed_+epsilon_)*der_prob[i]/Zed_);
