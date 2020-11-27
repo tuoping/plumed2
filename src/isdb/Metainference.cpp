@@ -462,10 +462,10 @@ Metainference::Metainference(const ActionOptions&ao):
 
   unsigned aver_max_steps=0;
   parse("SIGMA_MAX_STEPS", aver_max_steps);
-  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*1000;
+  if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*2000;
   if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
   if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
-  if(aver_max_steps<averaging) error("SIGMA_MAX_STEPS must be greater than AVERAGING");
+  if(aver_max_steps>0&&aver_max_steps<averaging) error("SIGMA_MAX_STEPS must be greater than AVERAGING");
 
   // resize std::vector for sigma_mean history
   sigma_mean2_last_.resize(nsel);

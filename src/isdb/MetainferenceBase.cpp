@@ -204,7 +204,7 @@ MetainferenceBase::MetainferenceBase(const ActionOptions&ao):
   if(aver_max_steps==0&&do_optsigmamean_==2) aver_max_steps=averaging*2000;
   if(aver_max_steps>0&&do_optsigmamean_<2) error("SIGMA_MAX_STEPS can only be used together with OPTSIGMAMEAN=SEM_MAX");
   if(aver_max_steps>0&&do_optsigmamean_==2) N_optimized_step_=aver_max_steps;
-  if(aver_max_steps<averaging) error("SIGMA_MAX_STEPS must be greater than AVERAGING");
+  if(aver_max_steps>0&&aver_max_steps<averaging) error("SIGMA_MAX_STEPS must be greater than AVERAGING");
 
   std::vector<double> read_sigma_mean_;
   parseVector("SIGMA_MEAN0",read_sigma_mean_);
