@@ -25,7 +25,11 @@
 #include "IFile.h"
 #include "lepton/Lepton.h"
 #include <cstring>
+#if defined(__PLUMED_HAS_SYS_DIRENT)
 #include <dirent.h>
+#else
+#include "./dirent.h"
+#endif
 #include <iostream>
 #include <map>
 #if defined(__PLUMED_HAS_CHDIR) || defined(__PLUMED_HAS_GETCWD)

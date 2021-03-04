@@ -467,12 +467,6 @@ fi
 
 
 
-#### Compulsory libraries ####
-# some of them might be made optional if we find that are not available in some system
-AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
-AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
-AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
-
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
 blas_found=
@@ -605,8 +599,6 @@ fi
 
 fi
 
-#### End of compulsory libraries ####
-
 #### Optional libraries ####
 AC_MSG_NOTICE([Now we will check for optional headers and libraries])
 
@@ -640,6 +632,8 @@ fi
 # this flag should be used also when linking MD engines to allow plumed
 # to be loaded later
 AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
+
+PLUMED_CHECK_PACKAGE([dirent.h],[readdir],[__PLUMED_HAS_SYS_DIRENT])
 
 mpi_found=ko
 # optional libraries follow
