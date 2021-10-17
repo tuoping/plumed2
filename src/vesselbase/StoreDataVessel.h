@@ -41,6 +41,7 @@ second step.
 
 class StoreDataVessel : public Vessel {
   friend class Moments;
+  friend class Contents;
 private:
 /// Do the quantities being stored in here need derivatives
   bool hasderiv;
