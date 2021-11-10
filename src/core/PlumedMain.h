@@ -31,6 +31,7 @@
 #include <stack>
 #include <memory>
 #include <map>
+#include "vesselbase/StoreDataVessel.h"
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE DEFINITIONS WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -172,6 +173,13 @@ private:
 
 /// The total bias (=total energy of the restraints)
   double bias;
+  unsigned NumberOfQuantities;
+  unsigned NumberOfDerivatives;
+  std::string TurnOnDerivOfthisAction;
+  std::vector<std::vector<double> > myvalues;
+  // std::vector<MultiValue*> myder;
+  // MultiValue* myder;
+  std::vector<std::vector<std::vector<double> > > myder;
 
 /// The total work.
 /// This computed by accumulating the change in external potentials.
@@ -359,6 +367,10 @@ public:
   void setSuffix(const std::string&);
 /// get the value of the bias
   double getBias()const;
+  int getNumberOfDerivatives()const;
+  int getNumberOfQuantities()const;
+  void getMultiColvars(const TypesafePtr &, const std::string&);
+  void getDerivativesOfMCV(const TypesafePtr &, const std::string&, const std::string&);
 /// get the value of the work
   double getWork()const;
 /// Opens a file.

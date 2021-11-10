@@ -26,6 +26,8 @@
 #include "ActionSet.h"
 #include "ActionWithValue.h"
 #include "ActionWithVirtualAtom.h"
+#include "vesselbase/StoreDataVessel.h"
+#include "multicolvar/MultiColvarBase.h"
 #include "Atoms.h"
 #include "CLToolMain.h"
 #include "ExchangePatterns.h"
@@ -202,6 +204,7 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
 
     std::vector<std::string> words=Tools::getWords(word);
     unsigned nw=words.size();
+    int itask; 
     if(nw==0) {
       // do nothing
     } else {
@@ -589,7 +592,38 @@ void PlumedMain::cmd(const std::string & word,const TypesafePtr & val) {
           cltool->cmd(kk.c_str(),val);
         }
         break;
+      case cmd_getNumberOfQuantities:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        *val.get<int*>()=getNumberOfQuantities();
+        break;
+      case cmd_getNumberOfDerivatives:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        *val.get<int*>()=getNumberOfDerivatives();
+        break;
+      case cmd_getMultiColvars:
+        CHECK_INIT(initialized,word);
+        plumed_assert(nw==2);
+        CHECK_NOTNULL(val,word);
+        getMultiColvars(val, words[1]);
+        break;//I SUGGEST U HAVE A BREAK
       /* ADDED WITH API==7 */
+      case cmd_getDerivativeOfMCV:
+        CHECK_INIT(initialized,word);
+        plumed_assert(nw==3);
+        CHECK_NOTNULL(val,word);
+        getDerivativesOfMCV(val, words[1], words[2]);
+        break;
+      case cmd_finishDataGrab:
+        CHECK_INIT(initialized,word);
+        mydatafetcher->finishDataGrab();
+        break;
+      case cmd_TurnOnDerivative:
+        CHECK_INIT(initialized,word);
+        CHECK_NOTNULL(val,word);
+        TurnOnDerivOfthisAction=val.get<const char*>();
+        break;
       case cmd_convert:
       {
         double v;
@@ -855,6 +889,7 @@ void PlumedMain::justCalculate() {
       }
       ActionWithValue*av=dynamic_cast<ActionWithValue*>(p);
       ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(p);
+      multicolvar::MultiColvarBase* amc=dynamic_cast<multicolvar::MultiColvarBase*>(p);
       {
         if(av) av->clearInputForces();
         if(av) av->clearDerivatives();
@@ -862,6 +897,16 @@ void PlumedMain::justCalculate() {
       {
         if(aa) aa->clearOutputForces();
         if(aa) if(aa->isActive()) aa->retrieveAtoms();
+      }
+      {
+        if(amc) amc->clearInputForces();
+        if(amc) amc->clearDependencies();
+        if(amc) amc->clearOutputForces();
+        if(amc) if(amc->isActive()) amc->retrieveAtoms();
+        if(amc) {
+          // if(!amc->getName().compare("LOCAL_Q6")) amc->turnOnDerivatives();
+          if(!amc->getName().compare(TurnOnDerivOfthisAction)) amc->turnOnDerivatives();
+        }
       }
       if(p->checkNumericalDerivatives()) p->calculateNumericalDerivatives();
       else p->calculate();
@@ -872,7 +917,55 @@ void PlumedMain::justCalculate() {
         av->setGradientsIfNeeded();
       }
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(p);
-      if(avv)avv->setGradientsIfNeeded();
+      if(avv){
+        avv->setGradientsIfNeeded();
+      }
+      if(amc){
+        log.printf(">>***>> colvars calculated by action %s \n",amc->getLabel().c_str() );
+        vesselbase::StoreDataVessel* stash;
+        stash = amc->buildDataStashes( NULL );
+
+        NumberOfQuantities=amc->getNumberOfQuantities();
+        unsigned NumberOfStoredValues=stash->getNumberOfStoredValues();
+        log<<">> stash->getNumberOfStoredValues(): "<<stash->getNumberOfStoredValues()<<"\n";
+        myvalues.resize(stash->getNumberOfStoredValues());
+        for(unsigned i=0; i<stash->getNumberOfStoredValues();++i){
+          myvalues[i].resize(NumberOfQuantities);
+          stash->retrieveSequentialValue(i, true, myvalues[i] );
+        }
+        log<<"myvalues[0] from stash=\n";
+        for(unsigned i=0; i<NumberOfQuantities; ++i){
+          log<<myvalues[0][i]<<"  ";
+        }
+        log<<"\n";
+
+        NumberOfDerivatives=amc->getNumberOfDerivatives();
+        MultiValue val_k( amc->getNumberOfQuantities(), amc->getNumberOfDerivatives() ); val_k.clearAll();
+        myder.resize(NumberOfStoredValues);
+        for(unsigned k=0; k<NumberOfStoredValues; ++k) {
+          stash->retrieveDerivatives( k, false, val_k );
+          myder[k].resize(NumberOfQuantities);
+          for(unsigned i=0; i<NumberOfQuantities; ++i){
+            myder[k][i].resize(NumberOfDerivatives);
+            for(unsigned j=0; j<NumberOfDerivatives; ++j) myder[k][i][j]=val_k.getDerivative(i,j);
+          }
+        }
+        // log<<"val_k->getNumberOfQuantities() = "<<NumberOfQuantities<<"\n";
+        // log<<"val_k->getNumberOfDerivatives() = "<<NumberOfDerivatives<<"\n";
+        // log<<"Derivative of Atom 0=\n";
+        // for(unsigned i=0; i<NumberOfQuantities; ++i){
+        //   log<<"Component "<<i<<"\n";
+        //   for(unsigned j=0; j<NumberOfDerivatives; ++j) log<<myder[0][i][j]<<"  ";
+        //   log<<"\n";
+        // }
+        // log<<"Derivative of Atom 1=\n";
+        // for(unsigned i=0; i<NumberOfQuantities; ++i){
+        //   log<<"Component "<<i<<"\n";
+        //   for(unsigned j=0; j<NumberOfDerivatives; ++j) log<<myder[1][i][j]<<"  ";
+        //   log<<"\n";
+        // }
+        // log<<"\n";
+      }else log<<"*** No ActionWithVessel ***\n";
     }
     iaction++;
   }
@@ -989,6 +1082,37 @@ void PlumedMain::load(const std::string& ss) {
 
 double PlumedMain::getBias() const {
   return bias;
+}
+
+int PlumedMain::getNumberOfQuantities() const{
+  return NumberOfQuantities;
+}
+
+int PlumedMain::getNumberOfDerivatives() const{
+  return NumberOfDerivatives;
+}
+
+void PlumedMain::getMultiColvars(const TypesafePtr& val, const std::string& word){
+  int itask;
+  Tools::convertNoexcept(word, itask);
+  auto vval=val.template get<const double**>();
+  if(!myvalues.empty()) *vval=&myvalues[itask][0];
+  else *vval=NULL;
+}
+
+void PlumedMain::getDerivativesOfMCV(const TypesafePtr& val, const std::string& word1, const std::string& word2){
+  int itask;
+  int jtask;
+  Tools::convertNoexcept(word1, itask);
+  Tools::convertNoexcept(word2, jtask);
+  auto vval=val.template get<const double**>();
+  if(!myder.empty()){
+    // std::vector<double> der;
+    // der.resize(NumberOfDerivatives);
+    // for(unsigned j=0; j<NumberOfDerivatives; ++j) der[j]=myder[itask][jtask][j];
+    // *vval=&der[0];
+    *vval=&myder[itask][jtask][0];
+  }else *vval=NULL;
 }
 
 double PlumedMain::getWork() const {

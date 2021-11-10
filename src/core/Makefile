@@ -1,4 +1,4 @@
-USE=config tools lepton
+USE=config tools lepton vesselbase multicolvar
 
 # generic makefile
 include ../maketools/make.module
